@@ -3,31 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ワンクリック仮想マシン</title>
-    <link rel="stylesheet" href="style.css">
+    <title>ワンクリック仮想環境</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        #main-container { width: 90%; max-width: 900px; }
+        #intro-panel { background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        #start-button { background-color: #007bff; color: white; font-size: 18px; font-weight: bold; padding: 15px 30px; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; }
+        #start-button:hover { background-color: #0056b3; }
+        #start-button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        #vm-panel { background: #000; padding: 10px; border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        #screen-container { width: 800px; height: 600px; position: relative; color: white; }
+        .loader-container { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; }
+        .loader { border: 8px solid #f3f3f3; border-top: 8px solid #3498db; border-radius: 50%; width: 60px; height: 60px; animation: spin 1.5s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>ワンクリック仮想マシン</h1>
-            <p id="header-subtitle">起動したいOSをクリックしてください。</p>
-            <button id="reset-button" style="display:none;">別のOSを選ぶ</button>
-        </header>
-
-        <!-- OSを選択するエリア -->
-        <div id="os-gallery">
-            <!-- JavaScriptによってOSのボタンがここに追加されます -->
+    <div id="main-container">
+        <div id="intro-panel">
+            <h1>ワンクリック仮想環境</h1>
+            <p id="intro-message">起動準備中です。ボタンが押せるようになるまでお待ちください...</p>
+            <button id="start-button" disabled>準備中...</button>
         </div>
-
-        <!-- 仮想マシンを表示するエリア (最初は非表示) -->
-        <div id="vm-container" style="display:none;">
-            <div id="screen-container"></div>
-            <div id="status-message"></div>
+        <div id="vm-panel" style="display: none;">
+            <div id="screen-container">
+                <div class="loader-container">
+                    <div class="loader"></div>
+                    <p>仮想環境を起動しています...</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- 必要なライブラリと自作のスクリプトを読み込む -->
-    <script src="https://unpkg.com/libv86@0.3.4/build/libv86.js"></script>
-    <script src="script.js"></script>
+    <script src="https://unpkg.com/libv86@0.3.4/build/libv86.js" onload="initializeApp()"></script>
+    
+    <script>
+        function initializeApp() {
+            const startButton = document.getElementById('start-button');
+            const introPanel = document.getElementById('intro-panel');
+            const vmPanel = document.getElementById('vm-panel');
+            const screenContainer = document.getElementById('screen-container');
+            const introMessage = document.getElementById('intro-message');
+
+            introMessage.textContent = '下のボタンを押すと、Arch Linuxの仮想環境が起動します。起動には1〜2分かかることがあります。';
+            startButton.textContent = '仮想環境を起動';
+            startButton.disabled = false;
+
+            startButton.addEventListener('click', () => {
+                introPanel.style.display = 'none';
+                vmPanel.style.display = 'block';
+                startVirtualEnvironment();
+            });
+        }
+
+        function startVirtualEnvironment() {
+            const V86_LIB_PATH = "https://unpkg.com/libv86@0.3.4/build/";
+
+            const config = {
+                screen_container: document.getElementById('screen-container'),
+                // ★ 別のArch Linuxイメージを使用
+                cdrom: {
+                    url: "https://archive.archlinux.org/iso/2023.01.01/archlinux-2023.01.01-x86_64.iso"
+                },
+                wasm_path: V86_LIB_PATH + "v86.wasm",
+                bios: { url: V86_LIB_PATH + "seabios.bin" },
+                vga_bios: { url: V86_LIB_PATH + "vgabios.bin" },
+                memory_size: 1024 * 1024 * 1024,
+                vga_memory_size: 16 * 1024 * 1024,
+                autostart: true,
+            };
+
+            const emulator = new V86Starter(config);
+        }
+    </script>
 </body>
 </html>
